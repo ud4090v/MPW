@@ -1,0 +1,14 @@
+{
+  "name": "my-ui5-app",
+  "version": "1.0.0",
+  "description": "SAP Fiori/UI5 mock-up application with FlexibleColumnLayout",
+  "private": true,
+  "scripts": {
+    "start": "ui5 serve --open",
+    "build": "ui5 build --all"
+  },
+  "devDependencies": {
+    "@ui5/cli": "^3.0.0",
+    "@ui5/middleware-simpleproxy": "^3.0.0"
+  }
+}
