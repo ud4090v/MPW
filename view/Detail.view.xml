@@ -1,0 +1,50 @@
+<mvc:View
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns:ui="sap.ui.table"
+  xmlns="sap.m"
+  controllerName="myApp.controller.Detail">
+  <ui:Table
+    id="detailTable"
+    rows="{detail>/workcenters}"
+    selectionMode="Single"
+    rowSelectionChange=".onSelectionChange">
+    <ui:columns>
+      <ui:Column>
+        <Label text="Bay"/>
+        <ui:template>
+          <Text text="{bay}"/>
+        </ui:template>
+      </ui:Column>
+      <ui:Column>
+        <Label text="Workcenter"/>
+        <ui:template>
+          <Text text="{workcenter}"/>
+        </ui:template>
+      </ui:Column>
+      <ui:Column>
+        <Label text="work orders count"/>
+        <ui:template>
+          <Text text="{count}"/>
+        </ui:template>
+      </ui:Column>
+      <ui:Column>
+        <Label text="Hours Target"/>
+        <ui:template>
+          <Text text="{hoursTarget}"/>
+        </ui:template>
+      </ui:Column>
+      <ui:Column>
+        <Label text="Number of Workers"/>
+        <ui:template>
+          <Text text="{numWorkers}"/>
+        </ui:template>
+      </ui:Column>
+      <ui:Column>
+        <Label text="Hours Commitment"/>
+        <ui:template>
+          <Text text="{hoursCommitment}"/>
+        </ui:template>
+      </ui:Column>
+    </ui:columns>
+  </ui:Table>
+</mvc:View>

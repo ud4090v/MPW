@@ -1,0 +1,20 @@
+<mvc:View
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns:ui="sap.ui.table"
+  xmlns="sap.m"
+  controllerName="myApp.controller.Master">
+  <ui:TreeTable
+    id="treeTable"
+    selectionMode="Single"
+    enableSelectAll="false"
+    rowSelectionChange=".onSelectionChange">
+    <ui:columns>
+      <ui:Column>
+        <Label text="Hierarchy"/>
+        <ui:template>
+          <Text text="{name}"/>
+        </ui:template>
+      </ui:Column>
+    </ui:columns>
+  </ui:TreeTable>
+</mvc:View>

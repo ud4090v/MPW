@@ -1,0 +1,53 @@
+<mvc:View
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  controllerName="myApp.controller.DetailDetail">
+  <Table
+    id="workOrdersTable"
+    items="{detaildetail>/workOrders}">
+    <columns>
+      <Column>
+        <Text text="Seq number"/>
+      </Column>
+      <Column>
+        <Text text="Hull No"/>
+      </Column>
+      <Column>
+        <Text text="Order Number"/>
+      </Column>
+      <Column>
+        <Text text="Order title"/>
+      </Column>
+      <Column>
+        <Text text="Location"/>
+      </Column>
+      <Column>
+        <Text text="ETC date"/>
+      </Column>
+      <Column>
+        <Text text="Target Hours"/>
+      </Column>
+      <Column>
+        <Text text="Comments"/>
+      </Column>
+      <Column>
+        <Text text="Barcode"/>
+      </Column>
+    </columns>
+    <items>
+      <ColumnListItem>
+        <cells>
+          <Text text="{seq}"/>
+          <Text text="{hullNo}"/>
+          <Text text="{orderNo}"/>
+          <Text text="{title}"/>
+          <Text text="{location}"/>
+          <Text text="{etcDate}"/>
+          <Text text="{targetHours}"/>
+          <Text text="{comments}"/>
+          <Text text="{barcode}"/>
+        </cells>
+      </ColumnListItem>
+    </items>
+  </Table>
+</mvc:View>
