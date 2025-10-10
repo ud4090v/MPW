@@ -1,0 +1,66 @@
+-- Master Table for Organizational Objects
+CREATE TABLE ZXXX_SHOP_MASTER (
+  ObjectID CHAR(16) PRIMARY KEY, -- GUID or NUMC for unique object ID
+  ObjectType CHAR(2) NOT NULL, -- WC, BA, AR, SA (Workcenter, Bay, Area, Subarea)
+  Description CHAR(30), -- Short description
+  FOREIGN KEY (ObjectType) REFERENCES ZXXX_OBJ_TYPES(ObjectType)
+);
+
+-- Hierarchy Table for Parent-Child Relationships
+CREATE TABLE ZXXX_SHOP_HIER (
+  ObjectID CHAR(16) NOT NULL,
+  ParentID CHAR(16) NOT NULL,
+  StartDate DATE NOT NULL,
+  EndDate DATE NOT NULL,
+  PRIMARY KEY (ObjectID, ParentID, StartDate, EndDate),
+  FOREIGN KEY (ObjectID) REFERENCES ZXXX_SHOP_MASTER(ObjectID),
+  FOREIGN KEY (ParentID) REFERENCES ZXXX_SHOP_MASTER(ObjectID)
+);
+
+-- Plan of Week (POW) Table
+CREATE TABLE ZXXX_POW_SHOP (
+  ObjectID CHAR(16) NOT NULL,
+  WeekStartDate DATE NOT NULL,
+  AUFPL CHAR(10) NOT NULL, -- Order routing number
+  APLZL CHAR(8) NOT NULL, -- Operation counter
+  OrderNo CHAR(12), -- Additional fields as needed
+  PRIMARY KEY (ObjectID, WeekStartDate, AUFPL, APLZL),
+  FOREIGN KEY (ObjectID) REFERENCES ZXXX_SHOP_MASTER(ObjectID)
+);
+
+-- Configuration Table
+CREATE TABLE ZXXX_POW_SHOP_STP (
+  ObjectID CHAR(16) NOT NULL,
+  WeekStartDate DATE NOT NULL,
+  ConfigField CHAR(20) NOT NULL, -- Specific configuration field
+  ConfigValue CHAR(50), -- Configuration value
+  PRIMARY KEY (ObjectID, WeekStartDate, ConfigField),
+  FOREIGN KEY (ObjectID) REFERENCES ZXXX_SHOP_MASTER(ObjectID)
+);
+
+-- Metrics Table
+CREATE TABLE ZXXX_POW_SHOP_METRICS (
+  ObjectID CHAR(16) NOT NULL,
+  WeekStartDate DATE NOT NULL,
+  MetricName CHAR(20) NOT NULL,
+  MetricValue DECIMAL(15,2), -- Example metric field
+  PRIMARY KEY (ObjectID, WeekStartDate, MetricName),
+  FOREIGN KEY (ObjectID) REFERENCES ZXXX_SHOP_MASTER(ObjectID)
+);
+
+-- Audit Table for Workcenter Configuration Changes
+CREATE TABLE ZXXX_WC_CONFIG_AUDIT (
+  ObjectID CHAR(16) NOT NULL,
+  ChangeDate DATETIME NOT NULL,
+  ConfigField CHAR(20) NOT NULL,
+  OldValue CHAR(50),
+  NewValue CHAR(50),
+  PRIMARY KEY (ObjectID, ChangeDate, ConfigField),
+  FOREIGN KEY (ObjectID) REFERENCES ZXXX_SHOP_MASTER(ObjectID)
+);
+
+-- Check Table for Object Types
+CREATE TABLE ZXXX_OBJ_TYPES (
+  ObjectType CHAR(2) PRIMARY KEY,
+  TypeDescription CHAR(30)
+);
