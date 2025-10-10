@@ -1,0 +1,198 @@
+ID: ITF002
+Title: Create Shop Hierarchy Table
+Description:
+The purpose of this is to create a structure for the data so that the application can determine which work centers belong to a bay, and which bays belong to the “branch” of the machine shop. The work centers defined here are what will be utilized to pull work into the POW itself. This is being done in a single admin table to allow high flexibility for various shops, and start/stop dates to allow for changes on shop floors
+ 
+1.       An admin table (ZSWM_SHOP_HIER or similar) will be created for a super-user to maintain the shop hierarchy and work center relationships, the table will be structured in the following manner:
+Field	Type	Sample	Notes
+Index	Int (~8), key	1	Unique identifier
+Level	Int (~3)	2	Level of hierarchy this exists at, so 1 could be the shop, level 2 is the bay, level 3 WC, etc.
+Description	Char (~30)	Main Machine Shop	What is displayed on screen
+Parent Index	Int (~8) same as index	1	This identifies the level this belongs to, so on a work center this would be the index for the specific bay it is in
+Start Date	DATS	10/02/2025	This indicates the effective date of the hierarchy
+End Date	DATS	10/03/2025	This indicates the ineffective date of the hierarchy, so you could plan for a shop hierarchy change next week if a work center was removed
+			
+ 
+Problems:
+1.	Index field serves as the hierarchy index and the Object ID at the same time. According to this it’s the only key field – which creates major issues. While it might work on some cases, it complicates the data handling. Below it explains why. 
+2.	Fields StartDate and EndDate should be key fields and apply to the specific hierarchy connection (parent-child). i.e. Workcenter WC1 reports to Bay1 starting Date1 and ending Date2. If you make them into index field – this will immediately apply to the Object ID itself (e.g. WC1 only exists between Date1 and Date2). If you not make them into Key fields – it automatically means you are losing the audit trail history of the hierarchy – Dates would simply be overwritten as non-key fields.
+3.	Field ‘Level’ should be automatically calculated (in the View) and not stored in the table, as it potentially creates data inconsistencies. E.g. What if this object is moved under a separate parent in the hierarchy? The Level field will not reflect the actual depth anymore and if some programs rely on it – it will lead to miscalculations
+Here’s what it should be replaced with to normalize data handling:
+
+1.	A Master Table for the Org objects (Work Centers, Bays, Areas, etc. ).Call it ZSWM_SHOP_MASTER or similar). This should be the single point of reference for any org object ID and related properties. Since we are dealing with multiple types of Org Objects (Bay, Workcenter, Area, SubArea,m etc.) – the Object Type must be introduced instead of creating separate tables for different types, or assuming the types by the Text description (very unreliable, subject to changes)
+
+
+Field	Type	Sample	Notes
+ObjectID (KEY)	Int (8-12) is fine however I’d recommend GUID – 16char HEX identifier commonly used 	1	Unique identifier
+ObjectType	Char(2)	WC (Work Center)	Can be mapped to a domain with fixed values, however for better flexibility I suggest check table with custom table maintenance attached
+Description	Char (~30)	Main Machine Shop	If no other language support is envisioned, the description can be maintained in the same table. However it’s a good idea to always separate them into associated TextTable, keeping the master table as small as possible – this has impact on the performance.
+Also it’s customary to have more than one textual data for the object – e.g. Short description, Long Description, Abbreviation, etc. Shifting all of this to a Text Table is a good idea from Performance improvement standpoint.
+
+
+2.	Org objects Hierarchy Table - ZSWM_SHOP_HIER or similar). This table should reference mater table. The hierarchy can be done two ways. 
+a.	Simple parent-child. This assumes only one type of relationship: Report-To.
+b.	Via Multiple relationships: Report-To, Notify, Approve, etc. The general model for this is: Object1, Object2, Relationship type, Start date, End date.
+
+3.	The table below implements the Simple parent-child hierarchy (single relationship)
+
+Field	Type	Sample	Notes
+KEY ObjectID	FK to ZSWM_SHOP_MASTER.ObjectID		Unique identifier
+KEY ParentID	FK to ZSWM_SHOP_MASTER.ObjectID		Parent Object ID
+KEY StartDate	BEGDA		Start of relationship
+KEY EndDate	ENDDA		End Of Relationship
+
+There is no need to copy description here – it is derived from the Obejct Master. No need to store Level – it’s calculated from this table based on dependencies on the particular date
+ 
+ID: ITF001
+Title: Create Shop POW Table
+Description:
+1.	A shop POW table (ZSWM_POW_SHOP or similar) will be created, this is the table that represents an actual POW for a specific shop/work center/etc. with the following data points available (some will not need to be displayed):
+Field	Data type	Sample	Notes
+Week Start Date	Existing, key	09/29/2025	Denotes the first day of week (Mon)
+Index	Existing	1	This is intended to be a pointer to the index on ZSWM_SHOP_HIER to identify the hierarchy item
+Top Level Description	Existing	Machine Shop	The description alone is insufficient (for example you can have 2 bay 1s) so this will identify the description of the highest hierarchy level for that record (if description was Bay 1, then top level description would be Machine Shop)
+Description	Existing	Main Machine Shop	This will be the description off ZSWM_SHOP_HIERARCHY for the record, for ease of use to know that this POW is for Bay 2
+AUFPL	Existing, key	 	This is the internal identifier for order, needed to retrieve op lines
+APLZL	Existing, key	 	This is the internal identifier for operations
+Order	Existing	503317539	Need to verify all order types are available that are needed
+Operation	Existing	0100	 
+GlobalSequence	7 characters, numeric	1514	This is the priority / sequence of this work
+This will be global sequence from optimizer at the time pow was created or refreshed, not the sequence for this specific POW
+POWSequence	7 characters, numeric	42	This will be the sequence for this specific POW, whether it be generated at the shop, bay, or work center level. This is what will actually print and can be manipulated by floor controller
+Work Center	Existing	MSM-ED50	 
+Hull	Existing	D0676	 
+Material Description	Existing	LATCH PIN BRACKET	 
+BB Location	Existing	 	Need to clarify location – On BCG spreadsheet it is BB location, on John’s it was not
+BB Donor	Existing	 	 
+BB Date	Existing	09/25/2025	 
+Target hours	Existing	14.2	Whole number
+Will need to determine source for op line target hours
+CD (completion date)	Char2	M,Tu,W,Th,F,Sa,Su	 
+Comments	Char100	 	Carry over week to week desired, so this may be made a separate table
+Manual	Bool	X	If job manually added
+Created By	Existing	JMD21	 
+Created Date	Existing	10/02/2025	 
+Created Time	Existing	10:10:10	 
+Changed By	Existing	JMD21	 
+Changed Date	Existing	09/30/2025	 
+Changed Time	Existing	10:31:00	 
+Deletion Flag	Bool	X	If job is manually removed this gets set
+Hot Job	Bool	 	9.2.38
+Critical Component	Bool	 	9.2.36
+Constrained	Bool	 	 
+Zero Target	Bool	 	9.2.20
+Prior WC	Existing	 	Will be assumed to be previous sequential WC
+Next WC	Existing	 	Will be assumed to be next sequential WC
+
+Problems:
+1.	Assuming that the fields highlighted in Orange are the key fields, it is not recommended to use description fields as the key.
+2.	Instead of making AUFPL and APLZL, it is better (for simplicity) to use a simple table counter as the secondary key. 
+
+Here’s the modified table structure:
+Field	Data type	Sample	Notes
+KEY ObjectID	FK to ZSWM_SHOP_MASTER		Unique object identifier from the shop master table
+KEY WeekStartDate	Begda		
+KEY SEQNR	Sequential Number of the record with the same ObjectID and STartDate (1…999999)	1	This is intended to be a pointer to the index on ZSWM_SHOP_HIER to identify the hierarchy item
+AUFPL		 	This is the internal identifier for order, needed to retrieve op lines
+APLZL		 	This is the internal identifier for operations
+Order	Existing	503317539	Need to verify all order types are available that are needed
+Operation	Existing	0100	 
+GlobalSequence	7 characters, numeric	1514	This is the priority / sequence of this work
+This will be global sequence from optimizer at the time pow was created or refreshed, not the sequence for this specific POW
+POWSequence	7 characters, numeric	42	This will be the sequence for this specific POW, whether it be generated at the shop, bay, or work center level. This is what will actually print and can be manipulated by floor controller
+Work Center	Existing	MSM-ED50	 
+Hull	Existing	D0676	 
+Material Description	Existing	LATCH PIN BRACKET	 
+BB Location	Existing	 	Need to clarify location – On BCG spreadsheet it is BB location, on John’s it was not
+BB Donor	Existing	 	 
+BB Date	Existing	09/25/2025	 
+Target hours	Existing	14.2	Whole number
+Will need to determine source for op line target hours
+CD (completion date)	Char2	M,Tu,W,Th,F,Sa,Su	 
+Comments	Char100	 	Carry over week to week desired, so this may be made a separate table
+Manual	Bool	X	If job manually added
+Created By	Existing	JMD21	 
+Created Date	Existing	10/02/2025	 
+Created Time	Existing	10:10:10	 
+Changed By	Existing	JMD21	 
+Changed Date	Existing	09/30/2025	 
+Changed Time	Existing	10:31:00	 
+Deletion Flag	Bool	X	If job is manually removed this gets set
+Hot Job	Bool	 	9.2.38
+Critical Component	Bool	 	9.2.36
+Constrained	Bool	 	 
+Zero Target	Bool	 	9.2.20
+Prior WC	Existing	 	Will be assumed to be previous sequential WC
+Next WC	Existing	 	Will be assumed to be next sequential WC
+
+ 
+ID: ITF003
+Title: Create Shop Setup table
+Description:
+This table is intended to house the manning and capacity information for a work center
+ 
+1.	A table (ZSWM_POW_SHOP_STP or similar) will be created for the shop setup information
+Field	Type	Sample	Notes
+Start Date	Existing, key	09/29/2025	 
+Index	Existing	1	This is intended to be a pointer to the index on ZSWM_SHOP_HIER to identify the hierarchy item
+Default	Bool	X	This will be the default when nothing exists for the week
+Top Level Description	Existing	Machine Shop	The description alone is insufficient (for example you can have 2 bay 1s) so this will identify the description of the highest hierarchy level for that record (if description was Bay 1, then top level description would be Machine Shop)
+Description	Existing	Main Machine Shop	This will be the description off ZSWM_SHOP_HIERARCHY for the record, for ease of use to know that this POW is for Bay 2
+Shift 1	Bool	X	 
+Shift 2	Bool	X	 
+Shift 3	Bool	X	 
+Target	 	45	 
+Committed Hours	 	53.7	 
+Committed Count	 	7	 
+Manning	Bool	X	 
+Constrained	Bool	X	 
+0 Hour Jobs	Int5	 	Whole numbers only, no negatives
+Closed Tickets	Bool	X	 
+Flags Cleared	Bool	X	 
+
+Problems:
+1.	The DEFAULT field purpose is not clear. It says if nothing exist for the week – the ‘default’ records should be applied. Since the DEFAULT has StartDate as well – if this record exists for the given week it is the default at the same time. But if it does not exist for the given week, DEFAULT for which week should be taken? Perhaps if the record does not exist for the given week for the Object, the previous week can be applied? Not sure here.
+2.	Other than that – same key adjustments
+
+Adjusted Table Structure
+Field	Type	Sample	Notes
+KEY ObjectID	FK to MasterTable		 
+KEY StartDate	Begda		
+??? Default	Bool	X	This will be the default when nothing exists for the week 
+Other non-key fields as defined			
+
+ 
+ID: ITF004
+Title: Create Shop POW metrics table
+Description: This table will capture the metrics for a week periodically. It is intended to capture the metrics at the bay level
+ 
+1.	A table will be created (ZSWM_POW_SHOP_MTRCS or similar) to house the area statistics captured periodically (TBD if there’s a specific level or all will be captured)
+Field	Type	Sample	Notes
+Start Date	DATS, existing, key	09/29/2025	 
+Index	Existing	1	This is intended to be a pointer to the index on ZSWM_SHOP_HIER to identify the hierarchy item
+Top Level Description	Existing	Machine Shop	The description alone is insufficient (for example you can have 2 bay 1s) so this will identify the description of the highest hierarchy level for that record (if description was Bay 1, then top level description would be Machine Shop)
+Description	Existing	Main Machine Shop	This will be the description off ZSWM_SHOP_HIERARCHY for the record, for ease of use to know that this POW is for Bay 2
+Total Commitments	Existing	78	 
+Total Hours	Existing	633	 
+In Week Commitments	Existing	50	 
+In Week Hours	Existing	345	 
+Hours Target	Existing	4927	 
+Hours Action	Char 80?	Add 4294 hours	 
+
+Problems:
+1.	Same as mentioned above
+2.	Hours action field is calculated based on the Existing Hours Target and Total Hours values. It does not need to be persisted in the table, especially with the textual information. This can be accomplished with CDS Views
+
+
+
+
+Adjusted Table Structure
+Field	Type	Sample	Notes
+KEY ObjectID	FK to Master Table		 
+KEY MetricsDate	Date		
+Total Commitments	Existing	78	 
+Total Hours	Existing	633	 
+In Week Commitments	Existing	50	 
+In Week Hours	Existing	345	 
+Hours Target	Existing	4927	 
+
