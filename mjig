@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mouse Jiggle</title>
+</head>
+<body>
+    <h1>Mouse Jiggler</h1>
+    <p>Mouse will jiggle slightly on page load.</p>
+
+    <script>
+        window.onload = function() {
+            // Function to simulate mouse movement
+            function jiggleMouse() {
+                // Get current mouse position
+                const event = new MouseEvent('mousemove', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                    clientX: Math.random() * 10 + window.innerWidth / 2, // Small random movement
+                    clientY: Math.random() * 10 + window.innerHeight / 2
+                });
+                document.dispatchEvent(event);
+            }
+
+            // Jiggle mouse every 100ms for 1 second (10 times)
+            let count = 0;
+            const interval = setInterval(() => {
+                jiggleMouse();
+                count++;
+                if (count >= 10) {
+                    clearInterval(interval);
+                }
+            }, 100);
+        };
+    </script>
+</body>
+</html>
